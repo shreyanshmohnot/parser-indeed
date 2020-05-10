@@ -10,7 +10,7 @@ job_df = pd.DataFrame(columns=['Job Title', 'Company', 'Location', 'Description'
 # requries indeed job url as input
 # returns job text description
 def extract_job(url):
-    job_page = bs(requests.get("http://indeed.com" + url).text, "html.parser")
+    job_page = bs(requests.get("http://indeed.com/viewjob?jk=" + url).text, "html.parser")
     return [descp.text.replace('\n', ' ').replace('\r', '') for descp in job_page.find_all(name="div", attrs={'class':'jobsearch-jobDescriptionText'})]
 
 # gets the main web search page in HTML format from indeed.com, each page gives 10 job search
@@ -27,7 +27,7 @@ def main_search_page(num_pages, query, location):
 
 def main(arg):
     
-    num_pages = 99 #10
+    num_pages = 10 #10
     query = arg[0] #"tech"
     search_location = "United States"
 
@@ -39,7 +39,7 @@ def main(arg):
 
             job_detail = []
 
-            if "/rc/clk" in div.a['href'] and div.a['title'] in query:
+            if query in div.a['title']:
                 # get job title
                 job_detail.append(div.a['title'])
                 # get company name
@@ -47,7 +47,7 @@ def main(arg):
                 # get job location data
                 job_detail.append(div.find(attrs={"location"}).text)
                 # get job description
-                job_detail.append(extract_job(div.a['href'])[0])
+                job_detail.append(extract_job(div['data-jk'])[0])
                 # get job url
                 # job_detail.append(div.a['href'])
 
