@@ -1,7 +1,15 @@
+"""
+File Name: scrapper.py
+Author: Shreyansh Mohnot
+Desciption: indeed.com job description parser
+usage: python scrapper.py ["job title/keyword"] [number of pages to crawl]
+"""
+
 import requests
 from bs4 import BeautifulSoup as bs
 import pandas as pd
 import sys
+import re
 
 # job data storage variable
 job_df = pd.DataFrame(columns=['Job Title', 'Company', 'Location', 'Description'])
@@ -25,34 +33,35 @@ def main_search_page(num_pages, query, location):
         soups.append(soup)
     return soups
 
+
+# def main function. Requires aguments from sys at command prompt.
+# Stores data into dataframes.
 def main(arg):
     
-    num_pages = 10 #10
+    num_pages = int(arg[1]) #10
     query = arg[0] #"tech"
     search_location = "United States"
 
     soups = main_search_page(num_pages, query, search_location)
+    div_all = [soup.find_all('div', attrs={'class':'row'}) for soup in soups]
     
-    for soup in soups:
-
-        for div in soup.find_all(name='div', attrs={"class":"row"}):
-
+    for div in div_all:
+        for d in div:
             job_detail = []
-
-            if query in div.a['title']:
+            if query.lower() in d.find('a', attrs={'class':'jobtitle'})['title'].lower():
                 # get job title
-                job_detail.append(div.a['title'])
+                job_detail.append(d.find('a', attrs={'class':'jobtitle'})['title'])
                 # get company name
-                job_detail.append(div.span.text.strip())
+                job_detail.append(d.find('span', attrs={'class':'company'}).text.strip())
                 # get job location data
-                job_detail.append(div.find(attrs={"location"}).text)
+                job_detail.append(str.strip(re.sub('<[^<]+?>', '', str(d.find('span', attrs={'class':'company'})))))
                 # get job description
-                job_detail.append(extract_job(div['data-jk'])[0])
+                job_detail.append(extract_job(d['data-jk'])[0])
                 # get job url
                 # job_detail.append(div.a['href'])
 
-                job_df.loc[div['data-jk']] = job_detail
-
+                job_df.loc[d['data-jk']] = job_detail
+    
     job_df.to_csv(query + ' jobs.csv')
 
 # job_df.to_csv('indeed_jobs.csv', mode='a', header=False)
